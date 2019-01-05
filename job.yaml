@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: liquibase-job
+spec:
+  backoffLimit: 1
+  activeDeadlineSeconds: 120
+  template:
+    metadata:
+      name: liquibase-job
+    spec:
+      containers:
+        - name: liquibase
+          image: webdevops/liquibase:postgres
+          args: ["update"]
+          volumeMounts:
+            - name: sql-configmap-volume
+              mountPath: /liquibase/
+          env:
+          - name: LIQUIBASE_CHANGELOG
+            value: /liquibase/changelog.sql
+          - name: LIQUIBASE_USERNAME
+            valueFrom:
+                secretKeyRef:
+                  key: database-user
+                  name: postgresql
+          - name: LIQUIBASE_PASSWORD
+            valueFrom:
+                secretKeyRef:
+                  key: database-password
+                  name: postgresql
+          - name: LIQUIBASE_URL
+            value: "jdbc:postgresql://postgresql:5432/sampledb"
+      restartPolicy: Never
+
+      volumes:
+      - name: sql-configmap-volume
+        configMap:
+          name: sql-configmap
